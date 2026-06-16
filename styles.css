@@ -151,7 +151,7 @@ h2 {
 
 .product-tabs {
   display: grid;
-  grid-template-columns: repeat(5, minmax(0, 1fr));
+  grid-template-columns: repeat(7, minmax(0, 1fr));
   gap: 10px;
   margin-bottom: 20px;
 }
@@ -212,6 +212,64 @@ h2 {
   padding: 20px;
   margin-bottom: 20px;
   box-shadow: var(--shadow);
+}
+
+.panel-subtitle {
+  margin: 6px 0 0;
+  color: var(--muted);
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.title-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
+.overview-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.overview-card {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: var(--shadow-soft);
+}
+
+.overview-card div {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: baseline;
+}
+
+.overview-card span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.overview-card strong {
+  font-size: 24px;
+}
+
+.overview-card p {
+  color: var(--muted);
+  line-height: 1.5;
+}
+
+.row-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
 }
 
 .grid-two {
@@ -860,6 +918,14 @@ button.icon.danger:hover {
 }
 
 @media (max-width: 900px) {
+  .overview-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .title-actions {
+    justify-content: flex-start;
+  }
+
   .topbar,
   .panel-title,
   .material-head {
@@ -886,6 +952,15 @@ button.icon.danger:hover {
 }
 
 @media (max-width: 700px) {
+  .overview-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .title-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
   body {
     font-size: 15px;
     background: #f4f7fb;

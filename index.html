@@ -50,10 +50,25 @@
 
       <nav id="productTabs" class="product-tabs"></nav>
 
-      <section class="panel product-only">
+      <section class="panel overview-only">
         <div class="panel-title">
-          <h2>1. 材料设置</h2>
-          <button id="addMaterialBtn">新增材料</button>
+          <h2>项目总览</h2>
+        </div>
+        <div id="overviewBody" class="overview-grid"></div>
+      </section>
+
+      <section class="panel material-only">
+        <div class="panel-title">
+          <div>
+            <h2>材料库</h2>
+            <p class="panel-subtitle">按分类维护商店常用整料，新建项目不会清空这里。</p>
+          </div>
+          <div class="title-actions">
+            <button type="button" class="secondary mini" data-add-material-product="window">新增窗户材料</button>
+            <button type="button" class="secondary mini" data-add-material-product="door">新增门材料</button>
+            <button type="button" class="secondary mini" data-add-material-product="screenWindow">新增纱窗材料</button>
+            <button type="button" class="secondary mini" data-add-material-product="screenDoor">新增纱门材料</button>
+          </div>
         </div>
         <div class="table-wrap">
           <table class="materials-table">

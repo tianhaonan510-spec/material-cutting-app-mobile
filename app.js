@@ -48,6 +48,7 @@ const state = {
 
 const els = {
   productTabs: document.querySelector("#productTabs"),
+  overviewBody: document.querySelector("#overviewBody"),
   materialsBody: document.querySelector("#materialsBody"),
   remnantsBody: document.querySelector("#remnantsBody"),
   purchaseBody: document.querySelector("#purchaseBody"),
@@ -217,9 +218,9 @@ function materialMatchesCategory(material, category = "") {
 function materialCategory(material) {
   if (material.category) return material.category;
   const name = String(material.name || "");
-  if (/中挺|分隔|中梃/.test(name)) return "mullion";
-  if (/扇|压线|网/.test(name)) return "sash";
-  if (/框|边框|主框/.test(name)) return "frame";
+  if (/中挺|分隔|中梃|mullion/i.test(name)) return "mullion";
+  if (/扇|压线|网|sash/i.test(name)) return "sash";
+  if (/框|边框|主框|frame/i.test(name)) return "frame";
   return "other";
 }
 
@@ -237,11 +238,13 @@ function materialOptions(selectedId, includeEmpty = false, productId = state.act
 function render() {
   ensureDesignMaterials();
   renderTabs();
+  renderOverview();
   renderTotalPurchaseOrder();
   renderDashboard();
   renderMode();
-  if (state.activeProduct !== "total") {
+  if (state.activeProduct === "materials") {
     renderRows("material");
+  } else if (isProductMode()) {
     renderRows("remnant");
     renderDesigner();
     renderDesignOrders();
@@ -253,15 +256,25 @@ function render() {
 
 function renderTabs() {
   const totalReady = PRODUCTS.every((product) => state.products[product.id].demands.length > 0);
-  if (state.activeProduct === "total" && !totalReady) state.activeProduct = "window";
+  if (state.activeProduct === "total" && !totalReady) state.activeProduct = "overview";
+  if (!["overview", "materials", "total"].includes(state.activeProduct) && !isProductMode()) {
+    state.activeProduct = "overview";
+  }
+  const overviewActive = state.activeProduct === "overview" ? "active" : "";
+  const materialsActive = state.activeProduct === "materials" ? "active" : "";
   const productButtons = PRODUCTS.map((product) => {
-    const demands = state.products[product.id].demands.length;
+    const demands = productBatches(product.id).length;
     const active = product.id === state.activeProduct ? "active" : "";
     return `<button class="${active}" data-product="${product.id}">${product.label}<span>${demands}</span></button>`;
   }).join("");
   const activeTotal = state.activeProduct === "total" ? "active" : "";
   const disabledTotal = totalReady ? "" : "disabled";
-  els.productTabs.innerHTML = `${productButtons}<button class="${activeTotal}" data-product="total" ${disabledTotal}>总采购清单<span>${totalReady ? "OK" : "未全"}</span></button>`;
+  els.productTabs.innerHTML = `
+    <button class="${overviewActive}" data-product="overview">项目总览<span>${allDemands().length}</span></button>
+    <button class="${materialsActive}" data-product="materials">材料库<span>${state.materials.length}</span></button>
+    ${productButtons}
+    <button class="${activeTotal}" data-product="total" ${disabledTotal}>总采购清单<span>${totalReady ? "OK" : "未全"}</span></button>
+  `;
   els.productTabs.querySelectorAll("button").forEach((button) => {
     button.addEventListener("click", () => {
       if (button.disabled) return;
@@ -273,10 +286,22 @@ function renderTabs() {
   });
 }
 
+function isProductMode() {
+  return PRODUCTS.some((product) => product.id === state.activeProduct);
+}
+
 function renderMode() {
   const isTotal = state.activeProduct === "total";
+  const isOverview = state.activeProduct === "overview";
+  const isMaterials = state.activeProduct === "materials";
   document.querySelectorAll(".product-only").forEach((section) => {
-    section.hidden = isTotal;
+    section.hidden = !isProductMode();
+  });
+  document.querySelectorAll(".material-only").forEach((section) => {
+    section.hidden = !isMaterials;
+  });
+  document.querySelectorAll(".overview-only").forEach((section) => {
+    section.hidden = !isOverview;
   });
   document.querySelectorAll(".total-only").forEach((section) => {
     section.hidden = !isTotal;
@@ -313,7 +338,7 @@ function renderRows(type) {
 function renderPurchaseOrder() {
   const result = optimizeForDemands(activeData().demands, false);
   if (!result || !result.groups.some((group) => group.newBars > 0)) {
-    els.purchaseBody.innerHTML = `<tr><td colspan="5" class="muted">上方尺寸图生成用料后，这里会显示需要向商店采购的整料。</td></tr>`;
+    els.purchaseBody.innerHTML = `<tr><td colspan="5" class="muted">添加订单项目后，这里会显示需要向商店采购的整料。</td></tr>`;
     return;
   }
 
@@ -328,6 +353,34 @@ function renderPurchaseOrder() {
         <td>${round(group.cost)}</td>
       </tr>
     `).join("");
+}
+
+function renderOverview() {
+  if (!els.overviewBody) return;
+  els.overviewBody.innerHTML = PRODUCTS.map((product) => {
+    const demands = state.products[product.id].demands;
+    const batches = productBatches(product.id);
+    const requiredLength = demands.reduce((sum, demand) => sum + num(demand.length) * Math.floor(num(demand.qty, 1)), 0);
+    return `
+      <article class="overview-card">
+        <div>
+          <span>${product.label}</span>
+          <strong>${batches.length} 项</strong>
+        </div>
+        <p>${demands.length} 条切割需求，${round(requiredLength)} cm 用料</p>
+        <button type="button" class="secondary mini" data-open-product="${product.id}">进入${product.label}</button>
+      </article>
+    `;
+  }).join("");
+
+  els.overviewBody.querySelectorAll("[data-open-product]").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.activeProduct = button.dataset.openProduct;
+      state.lastResult = null;
+      persist();
+      render();
+    });
+  });
 }
 
 function renderTotalPurchaseOrder() {
@@ -371,7 +424,7 @@ function renderDesignOrders() {
   els.designOrdersTitle.textContent = `4. ${product.label}订单项目列表`;
   const batches = designBatches();
   if (!batches.length) {
-    els.designOrdersBody.innerHTML = `<tr><td colspan="5" class="muted">还没有订单项目。设置一个门窗的尺寸、结构和数量后，点击“添加当前设计为订单项目”；不同尺寸就继续修改后再添加。</td></tr>`;
+    els.designOrdersBody.innerHTML = `<tr><td colspan="5" class="muted">还没有订单项目。设置一个门窗的尺寸、结构和数量后，点击“添加当前设计为订单项目”；不同尺寸可继续修改后再添加。</td></tr>`;
     return;
   }
 
@@ -381,18 +434,32 @@ function renderDesignOrders() {
       <td>${batch.qty}</td>
       <td>${batch.items.length}</td>
       <td>${round(batch.requiredLength)}</td>
-      <td><button class="icon danger" data-delete-batch="${escapeHtml(batch.id)}">删除</button></td>
+      <td class="row-actions">
+        <button class="secondary mini" data-edit-batch="${escapeHtml(batch.id)}">编辑</button>
+        <button class="secondary mini" data-copy-batch="${escapeHtml(batch.id)}">复制</button>
+        <button class="icon danger mini" data-delete-batch="${escapeHtml(batch.id)}">删除</button>
+      </td>
     </tr>
   `).join("");
 
+  els.designOrdersBody.querySelectorAll("[data-edit-batch]").forEach((button) => {
+    button.addEventListener("click", () => editDesignBatch(button.dataset.editBatch));
+  });
+  els.designOrdersBody.querySelectorAll("[data-copy-batch]").forEach((button) => {
+    button.addEventListener("click", () => copyDesignBatch(button.dataset.copyBatch));
+  });
   els.designOrdersBody.querySelectorAll("[data-delete-batch]").forEach((button) => {
     button.addEventListener("click", () => deleteDesignBatch(button.dataset.deleteBatch));
   });
 }
 
 function designBatches() {
+  return productBatches(state.activeProduct);
+}
+
+function productBatches(productId) {
   const map = new Map();
-  activeData().demands
+  state.products[productId].demands
     .filter((demand) => demand.source === "design")
     .forEach((demand) => {
       const id = demand.batchId || "legacy";
@@ -401,6 +468,7 @@ function designBatches() {
           id,
           label: demand.batchLabel || "旧订单项目",
           qty: batchQty(demand.batchLabel),
+          snapshot: demand.designSnapshot || null,
           items: [],
           requiredLength: 0,
         });
@@ -427,7 +495,45 @@ function deleteDesignBatch(batchId) {
   render();
 }
 
+function copyDesignBatch(batchId) {
+  const source = activeData().demands.filter((demand) => (demand.batchId || "legacy") === batchId);
+  if (!source.length) return;
+  const nextBatchId = uid();
+  const nextLabel = `${source[0].batchLabel || "订单项目"} 复制`;
+  const copies = source.map((demand) => ({
+    ...demand,
+    id: uid(),
+    batchId: nextBatchId,
+    batchLabel: nextLabel,
+  }));
+  activeData().demands = activeData().demands.concat(copies);
+  state.lastResult = null;
+  persist();
+  render();
+}
+
+function editDesignBatch(batchId) {
+  const batch = designBatches().find((item) => item.id === batchId);
+  if (!batch?.snapshot) {
+    alert("这个订单项目没有保存设计快照，无法载回编辑。可以删除后重新添加。");
+    return;
+  }
+  activeData().design = {
+    ...emptyDesign(state.activeProduct),
+    ...structuredCloneSafe(batch.snapshot),
+  };
+  activeData().demands = activeData().demands.filter((demand) => (demand.batchId || "legacy") !== batchId);
+  state.lastResult = null;
+  persist();
+  render();
+}
+
+function structuredCloneSafe(value) {
+  return JSON.parse(JSON.stringify(value));
+}
+
 function visibleMaterials() {
+  if (state.activeProduct === "materials") return state.materials;
   return state.materials.filter((material) => materialMatchesProduct(material));
 }
 
@@ -486,12 +592,13 @@ function deleteRow(type, id) {
   render();
 }
 
-function addMaterial() {
+function addMaterial(productId = null) {
+  const targetProductId = productId || (isProductMode() ? state.activeProduct : "window");
   state.materials.push({
     id: uid(),
-    productType: state.activeProduct,
+    productType: targetProductId,
     category: "frame",
-    name: materialCategoryLabel("frame", state.activeProduct),
+    name: materialCategoryLabel("frame", targetProductId),
     stockLength: 500,
     price: 0,
     kerf: 1,
@@ -1077,7 +1184,8 @@ function appendDesignDemands(pieces) {
   const design = activeDesign();
   const batchId = uid();
   const batchLabel = designBatchLabel(design);
-  const designDemands = pieces.map((piece) => ({ id: uid(), source: "design", batchId, batchLabel, ...piece }));
+  const designSnapshot = structuredCloneSafe(design);
+  const designDemands = pieces.map((piece) => ({ id: uid(), source: "design", batchId, batchLabel, designSnapshot, ...piece }));
   activeData().demands = activeData().demands.concat(designDemands);
 }
 
@@ -1311,7 +1419,7 @@ function renderError(errors) {
 function renderResult(result) {
   if (!result) {
     els.summary.className = "summary empty";
-    els.summary.textContent = "生成本页采购订单后，点击计算。";
+    els.summary.textContent = "添加订单项目后，点击计算本页采购方案。";
     els.results.innerHTML = "";
     return;
   }
@@ -1473,7 +1581,9 @@ function escapeHtml(value) {
     .replaceAll("'", "&#039;");
 }
 
-document.querySelector("#addMaterialBtn").addEventListener("click", addMaterial);
+document.querySelectorAll("[data-add-material-product]").forEach((button) => {
+  button.addEventListener("click", () => addMaterial(button.dataset.addMaterialProduct));
+});
 document.querySelector("#addRemnantBtn").addEventListener("click", addRemnant);
 document.querySelector("#addDemandBtn")?.addEventListener("click", addDemand);
 document.querySelector("#optimizeBtn").addEventListener("click", () => {
@@ -1509,7 +1619,7 @@ function resetAllData() {
 }
 
 function resetProjectData() {
-  if (!confirm("确定新建项目吗？材料设置会保留，余料库存、尺寸图和订单会清空。")) return;
+  if (!confirm("确定新建项目吗？材料库会保留，余料库存、尺寸图和订单项目会清空。")) return;
   Object.assign(state, {
     activeProduct: "window",
     remnants: [],
