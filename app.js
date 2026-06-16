@@ -368,10 +368,10 @@ function renderMaterialSources(materialId) {
 function renderDesignOrders() {
   if (!els.designOrdersBody) return;
   const product = PRODUCTS.find((item) => item.id === state.activeProduct);
-  els.designOrdersTitle.textContent = `4. ${product.label}订单项目`;
+  els.designOrdersTitle.textContent = `4. ${product.label}订单项目列表`;
   const batches = designBatches();
   if (!batches.length) {
-    els.designOrdersBody.innerHTML = `<tr><td colspan="5" class="muted">还没有订单项目。设置尺寸和数量后，点击“生成本页采购订单”即可添加。</td></tr>`;
+    els.designOrdersBody.innerHTML = `<tr><td colspan="5" class="muted">还没有订单项目。设置一个门窗的尺寸、结构和数量后，点击“添加当前设计为订单项目”；不同尺寸就继续修改后再添加。</td></tr>`;
     return;
   }
 
@@ -1066,6 +1066,7 @@ function applyDesignToDemands() {
   state.lastResult = null;
   persist();
   render();
+  alert("已添加为订单项目。可以继续修改尺寸/结构，再添加下一个门窗。");
 }
 
 function refreshDesignDemands() {
@@ -1075,9 +1076,19 @@ function refreshDesignDemands() {
 function appendDesignDemands(pieces) {
   const design = activeDesign();
   const batchId = uid();
-  const batchLabel = `${design.note || PRODUCT_LABELS[state.activeProduct]} x${Math.max(1, Math.floor(num(design.qty, 1)))}`;
+  const batchLabel = designBatchLabel(design);
   const designDemands = pieces.map((piece) => ({ id: uid(), source: "design", batchId, batchLabel, ...piece }));
   activeData().demands = activeData().demands.concat(designDemands);
+}
+
+function designBatchLabel(design = activeDesign()) {
+  const productLabel = PRODUCT_LABELS[state.activeProduct] || "订单";
+  const note = design.note || productLabel;
+  const width = round(num(design.width, 0));
+  const height = round(num(design.height, 0));
+  const qty = Math.max(1, Math.floor(num(design.qty, 1)));
+  const mode = design.template === "free" ? "自由结构" : "模板结构";
+  return `${note} ${width}x${height} ${mode} x${qty}`;
 }
 
 function demandSignature(demand) {
