@@ -30,6 +30,7 @@ const emptyDesign = (productId = "window") => ({
   colWidths: [],
   rowHeights: [],
   cells: [],
+  segments: [],
 });
 
 const emptyProductData = (productId) => ({
@@ -636,6 +637,7 @@ function resizePartsToTotal(design, key, total) {
 
 function renderDimensionEditor() {
   const design = activeDesign();
+  if (design.template === "free") return renderFreeStructureEditor();
   normalizeDesignGrid(design);
   return `
     <div class="editor-title">
@@ -664,7 +666,63 @@ function renderDimensionEditor() {
   `;
 }
 
+function renderFreeStructureEditor() {
+  const design = activeDesign();
+  normalizeFreeSegments(design);
+  return `
+    <div class="editor-title">
+      <strong>自由结构构件</strong>
+      <div class="free-actions">
+        <button type="button" class="secondary mini" id="addVerticalSegmentBtn">加竖中挺</button>
+        <button type="button" class="secondary mini" id="addHorizontalSegmentBtn">加横中挺</button>
+      </div>
+    </div>
+    <div class="free-segment-list">
+      ${design.segments.length ? design.segments.map((segment, index) => renderFreeSegmentRow(segment, index)).join("") : `<p class="muted editor-help">先添加竖向或横向中挺。外框会自动按总宽、总高生成。</p>`}
+    </div>
+  `;
+}
+
+function renderFreeSegmentRow(segment, index) {
+  const isVertical = segment.type === "vertical";
+  return `
+    <div class="free-segment-row" data-segment-id="${segment.id}">
+      <div class="free-segment-head">
+        <strong>${isVertical ? "竖向中挺" : "横向中挺"} ${index + 1}</strong>
+        <button type="button" class="icon danger mini" data-delete-segment="${segment.id}">删除</button>
+      </div>
+      <div class="form-row">
+        <label>
+          类型
+          <select data-segment-field="type">
+            <option value="vertical" ${isVertical ? "selected" : ""}>竖向中挺</option>
+            <option value="horizontal" ${!isVertical ? "selected" : ""}>横向中挺</option>
+          </select>
+        </label>
+        <label>
+          ${isVertical ? "位置 X cm" : "位置 Y cm"}
+          <input data-segment-field="position" type="number" min="0" step="0.1" value="${round(segment.position)}" />
+        </label>
+      </div>
+      <div class="form-row">
+        <label>
+          ${isVertical ? "起点 Y cm" : "起点 X cm"}
+          <input data-segment-field="start" type="number" min="0" step="0.1" value="${round(segment.start)}" />
+        </label>
+        <label>
+          ${isVertical ? "终点 Y cm" : "终点 X cm"}
+          <input data-segment-field="end" type="number" min="0" step="0.1" value="${round(segment.end)}" />
+        </label>
+      </div>
+    </div>
+  `;
+}
+
 function bindDimensionEditor() {
+  if (activeDesign().template === "free") {
+    bindFreeStructureEditor();
+    return;
+  }
   els.dimensionEditor.querySelectorAll("[data-grid]").forEach((input) => {
     input.addEventListener("change", () => {
       const design = activeDesign();
@@ -711,8 +769,86 @@ function bindDimensionEditor() {
   });
 }
 
+function bindFreeStructureEditor() {
+  els.dimensionEditor.querySelector("#addVerticalSegmentBtn")?.addEventListener("click", () => addFreeSegment("vertical"));
+  els.dimensionEditor.querySelector("#addHorizontalSegmentBtn")?.addEventListener("click", () => addFreeSegment("horizontal"));
+
+  els.dimensionEditor.querySelectorAll("[data-delete-segment]").forEach((button) => {
+    button.addEventListener("click", () => {
+      const design = activeDesign();
+      design.segments = design.segments.filter((segment) => segment.id !== button.dataset.deleteSegment);
+      designChanged();
+    });
+  });
+
+  els.dimensionEditor.querySelectorAll(".free-segment-row").forEach((row) => {
+    const segment = activeDesign().segments.find((item) => item.id === row.dataset.segmentId);
+    if (!segment) return;
+    row.querySelectorAll("[data-segment-field]").forEach((input) => {
+      input.addEventListener("change", () => {
+        updateFreeSegment(segment, input.dataset.segmentField, input.value);
+        designChanged();
+      });
+    });
+  });
+}
+
+function addFreeSegment(type) {
+  const design = activeDesign();
+  normalizeFreeSegments(design);
+  const vertical = type === "vertical";
+  design.segments.push({
+    id: uid(),
+    type,
+    position: vertical ? round(num(design.width, 1) / 2) : round(num(design.height, 1) / 2),
+    start: 0,
+    end: vertical ? num(design.height, 1) : num(design.width, 1),
+  });
+  designChanged();
+}
+
+function updateFreeSegment(segment, field, value) {
+  const design = activeDesign();
+  if (field === "type") {
+    segment.type = value === "horizontal" ? "horizontal" : "vertical";
+    segment.position = segment.type === "vertical" ? round(num(design.width, 1) / 2) : round(num(design.height, 1) / 2);
+    segment.start = 0;
+    segment.end = segment.type === "vertical" ? num(design.height, 1) : num(design.width, 1);
+  } else {
+    segment[field] = num(value, 0);
+  }
+  normalizeFreeSegments(design);
+}
+
+function normalizeFreeSegments(design = activeDesign()) {
+  const width = Math.max(1, num(design.width, 1));
+  const height = Math.max(1, num(design.height, 1));
+  design.segments = Array.isArray(design.segments) ? design.segments : [];
+  design.segments.forEach((segment) => {
+    segment.id ||= uid();
+    segment.type = segment.type === "horizontal" ? "horizontal" : "vertical";
+    const maxPosition = segment.type === "vertical" ? width : height;
+    const maxEnd = segment.type === "vertical" ? height : width;
+    segment.position = Math.min(maxPosition, Math.max(0, num(segment.position, 0)));
+    segment.start = Math.min(maxEnd, Math.max(0, num(segment.start, 0)));
+    segment.end = Math.min(maxEnd, Math.max(0, num(segment.end, maxEnd)));
+    if (segment.end < segment.start) [segment.start, segment.end] = [segment.end, segment.start];
+  });
+}
+
+function designChanged() {
+  refreshDesignDemands();
+  state.lastResult = null;
+  persist();
+  renderDesigner();
+  renderPurchaseOrder();
+  renderDashboard();
+  renderResult(null);
+}
+
 function drawWindowSvg(showCellIds = false) {
   const design = activeDesign();
+  if (design.template === "free") return drawFreeStructureSvg();
   normalizeDesignGrid(design);
   const width = Math.max(1, design.colWidths.reduce((sum, item) => sum + num(item), 0));
   const height = Math.max(1, design.rowHeights.reduce((sum, item) => sum + num(item), 0));
@@ -775,6 +911,46 @@ function drawWindowSvg(showCellIds = false) {
   `;
 }
 
+function drawFreeStructureSvg() {
+  const design = activeDesign();
+  normalizeFreeSegments(design);
+  const width = Math.max(1, num(design.width, 1));
+  const height = Math.max(1, num(design.height, 1));
+  const viewW = 520;
+  const viewH = 340;
+  const margin = 56;
+  const scale = Math.min((viewW - margin * 2) / width, (viewH - margin * 2) / height);
+  const w = width * scale;
+  const h = height * scale;
+  const x = (viewW - w) / 2;
+  const y = (viewH - h) / 2;
+  const lines = design.segments.map((segment, index) => {
+    const isVertical = segment.type === "vertical";
+    const x1 = isVertical ? x + segment.position * scale : x + segment.start * scale;
+    const y1 = isVertical ? y + segment.start * scale : y + segment.position * scale;
+    const x2 = isVertical ? x + segment.position * scale : x + segment.end * scale;
+    const y2 = isVertical ? y + segment.end * scale : y + segment.position * scale;
+    const labelX = isVertical ? x1 + 16 : (x1 + x2) / 2;
+    const labelY = isVertical ? (y1 + y2) / 2 : y1 - 10;
+    const length = round(Math.abs(segment.end - segment.start));
+    return `
+      <line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" class="mullion" />
+      <text x="${labelX}" y="${labelY}" text-anchor="middle" class="cell-id">${isVertical ? "V" : "H"}${index + 1}</text>
+      <text x="${labelX}" y="${labelY + 16}" text-anchor="middle" class="cell-dim">${length} cm</text>
+    `;
+  });
+
+  return `
+    <svg viewBox="0 0 ${viewW} ${viewH}" role="img" aria-label="自由结构尺寸图">
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" class="glass" />
+      <rect x="${x}" y="${y}" width="${w}" height="${h}" class="frame" />
+      ${lines.join("")}
+      <text x="${viewW / 2}" y="${y + h + 24}" text-anchor="middle" class="dim">总宽 ${round(width)} cm</text>
+      <text x="${x + w + 30}" y="${y + h / 2}" text-anchor="middle" class="dim rotate">总高 ${round(height)} cm</text>
+    </svg>
+  `;
+}
+
 function cumulativeStarts(values, start) {
   const starts = [];
   values.reduce((acc, value) => {
@@ -787,6 +963,7 @@ function cumulativeStarts(values, start) {
 function designPieces() {
   const design = activeDesign();
   const product = PRODUCTS.find((item) => item.id === state.activeProduct);
+  if (design.template === "free") return freeDesignPieces(design, product);
   normalizeDesignGrid(design);
   const width = round(design.colWidths.reduce((sum, item) => sum + num(item), 0));
   const height = round(design.rowHeights.reduce((sum, item) => sum + num(item), 0));
@@ -813,6 +990,34 @@ function designPieces() {
       });
     }
   }
+  const designQty = Math.max(1, Math.floor(num(design.qty, 1)));
+  return combinePieces(pieces
+    .filter((piece) => piece.length > 0 && piece.qty > 0)
+    .map((piece) => ({ ...piece, qty: piece.qty * designQty })));
+}
+
+function freeDesignPieces(design, product) {
+  normalizeFreeSegments(design);
+  const width = round(num(design.width, 1));
+  const height = round(num(design.height, 1));
+  const note = design.note || product.label;
+  const pieces = [];
+
+  if (design.frameMaterialId) {
+    pieces.push({ materialId: design.frameMaterialId, length: height, qty: 2, note: `${note} 主框竖料` });
+    pieces.push({ materialId: design.frameMaterialId, length: width, qty: 2, note: `${note} 主框横料` });
+  }
+
+  if (design.mullionMaterialId) {
+    design.segments.forEach((segment, index) => {
+      const length = round(Math.abs(num(segment.end) - num(segment.start)));
+      if (length <= 0) return;
+      const code = `${segment.type === "vertical" ? "V" : "H"}${index + 1}`;
+      const label = segment.type === "vertical" ? "竖向中挺" : "横向中挺";
+      pieces.push({ materialId: design.mullionMaterialId, length, qty: 1, note: `${note} ${label} ${code}` });
+    });
+  }
+
   const designQty = Math.max(1, Math.floor(num(design.qty, 1)));
   return combinePieces(pieces
     .filter((piece) => piece.length > 0 && piece.qty > 0)

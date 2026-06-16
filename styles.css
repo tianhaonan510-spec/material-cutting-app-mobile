@@ -300,6 +300,33 @@ h2 {
   font-size: 12px;
 }
 
+.free-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.free-segment-list {
+  display: grid;
+  gap: 10px;
+}
+
+.free-segment-row {
+  display: grid;
+  gap: 10px;
+  padding: 10px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #fff;
+}
+
+.free-segment-head {
+  display: flex;
+  justify-content: space-between;
+  gap: 10px;
+  align-items: center;
+}
+
 .window-drawing {
   display: grid;
   place-items: center;
@@ -896,6 +923,17 @@ button.icon.danger:hover {
 
   .cell-editor {
     grid-template-columns: repeat(2, minmax(0, 1fr)) !important;
+  }
+
+  .free-actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    width: 100%;
+  }
+
+  .free-segment-head {
+    align-items: stretch;
+    flex-direction: column;
   }
 
   .table-wrap {
