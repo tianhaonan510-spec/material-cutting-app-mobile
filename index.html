@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>断桥铝门窗用料优化驾驶舱</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <header class="topbar">
+      <div>
+        <h1>断桥铝门窗用料优化驾驶舱</h1>
+        <p>按窗户、门、纱窗、纱门分别建模，再统一汇总采购成本、切割方案和余料库存。</p>
+      </div>
+      <div class="top-actions">
+        <button id="loadSampleBtn" class="secondary">载入示例</button>
+        <button id="resetBtn" class="secondary">新建项目</button>
+        <button id="resetAllBtn" class="danger">清空全部</button>
+      </div>
+    </header>
+
+    <main class="app-shell">
+      <section class="dashboard">
+        <div class="dash-card primary-card">
+          <span>全部订单预计成本</span>
+          <strong id="dashCost">0 元</strong>
+          <small>按当前四类订单合并估算</small>
+        </div>
+        <div class="dash-card">
+          <span>采购整料</span>
+          <strong id="dashBars">0 根</strong>
+          <small>已扣除可用旧余料</small>
+        </div>
+        <div class="dash-card">
+          <span>可复用余料</span>
+          <strong id="dashReusable">0 cm</strong>
+          <small>达到阈值的剩余料</small>
+        </div>
+        <div class="dash-card">
+          <span>废料</span>
+          <strong id="dashWaste">0 cm</strong>
+          <small>低于阈值的剩余料</small>
+        </div>
+        <div class="dash-card">
+          <span>材料利用率</span>
+          <strong id="dashUtilization">0%</strong>
+          <small>用料长度 / 新购整料长度</small>
+        </div>
+      </section>
+
+      <nav id="productTabs" class="product-tabs"></nav>
+
+      <section class="panel product-only">
+        <div class="panel-title">
+          <h2>1. 材料设置</h2>
+          <button id="addMaterialBtn">新增材料</button>
+        </div>
+        <div class="table-wrap">
+          <table class="materials-table">
+            <thead>
+              <tr>
+                <th>材料分类</th>
+                <th>整料长度 cm</th>
+                <th>单根价格 元</th>
+                <th>切割损耗 cm</th>
+                <th>可复用阈值 cm</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="materialsBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="grid-two product-only">
+        <section class="panel">
+          <div class="panel-title">
+            <h2>2. 余料库存</h2>
+            <button id="addRemnantBtn">新增余料</button>
+          </div>
+          <div class="table-wrap">
+            <table class="remnants-table">
+              <thead>
+                <tr>
+                  <th>材料</th>
+                  <th>余料长度 cm</th>
+                  <th>备注</th>
+                  <th></th>
+                </tr>
+              </thead>
+              <tbody id="remnantsBody"></tbody>
+            </table>
+          </div>
+        </section>
+
+        <section class="panel">
+          <div class="panel-title">
+            <h2 id="designerTitle">3. 尺寸图设计</h2>
+            <button id="applyDesignBtn" class="primary">生成本页采购订单</button>
+          </div>
+
+          <div class="designer">
+            <div class="designer-controls">
+              <label>
+                模板
+                <select id="designTemplate">
+                  <option value="single">单扇/单格</option>
+                  <option value="double">两扇/两格</option>
+                  <option value="triple">三扇/三格</option>
+                  <option value="topBottom">上下分格</option>
+                  <option value="grid4">四宫格</option>
+                  <option value="custom">自定义分格</option>
+                </select>
+              </label>
+              <div class="form-row">
+                <label>
+                  总宽 cm
+                  <input id="designWidth" type="number" min="1" step="0.1" />
+                </label>
+                <label>
+                  总高 cm
+                  <input id="designHeight" type="number" min="1" step="0.1" />
+                </label>
+              </div>
+              <div class="form-row">
+                <label>
+                  竖向分隔数
+                  <input id="designVerticals" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  横向分隔数
+                  <input id="designHorizontals" type="number" min="0" step="1" />
+                </label>
+              </div>
+              <div class="form-row">
+                <label>
+                  主框料
+                  <select id="designFrameMaterial"></select>
+                </label>
+                <label>
+                  扇/网料
+                  <select id="designSashMaterial"></select>
+                </label>
+              </div>
+              <label>
+                分隔/中挺料
+                <select id="designMullionMaterial"></select>
+              </label>
+              <label>
+                备注
+                <input id="designNote" placeholder="如 客厅窗 120x150" />
+              </label>
+              <label>
+                数量
+                <input id="designQty" type="number" min="1" step="1" />
+              </label>
+              <div id="dimensionEditor" class="dimension-editor"></div>
+            </div>
+
+            <div class="designer-preview">
+              <div id="windowDrawing" class="window-drawing"></div>
+              <div id="designBreakdown" class="design-breakdown"></div>
+            </div>
+          </div>
+        </section>
+      </section>
+
+      <section class="panel product-only">
+        <div class="panel-title">
+          <h2 id="designOrdersTitle">4. 本类订单项目</h2>
+        </div>
+        <p class="section-hint">同尺寸多个可填写数量；不同尺寸可修改尺寸后再次生成，会作为新的订单项目追加到本类列表。</p>
+        <div class="table-wrap">
+          <table class="design-orders-table">
+            <thead>
+              <tr>
+                <th>订单项目</th>
+                <th>数量</th>
+                <th>切割条目</th>
+                <th>用料总长 cm</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="designOrdersBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel product-only">
+        <div class="panel-title">
+          <h2 id="ordersTitle">4. 本页采购订单</h2>
+        </div>
+        <p class="section-hint">这里是向商店下单的整料采购清单，只显示整根整根购买的数量；具体切割尺寸在优化结果里查看。</p>
+        <div class="table-wrap">
+          <table class="purchase-table">
+            <thead>
+              <tr>
+                <th>材料</th>
+                <th>整料长度 cm</th>
+                <th>采购根数</th>
+                <th>单根价格 元</th>
+                <th>小计 元</th>
+              </tr>
+            </thead>
+            <tbody id="purchaseBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel total-only">
+        <div class="panel-title">
+          <h2>5. 总采购清单</h2>
+        </div>
+        <p class="section-hint">汇总窗户、门、纱窗、纱门全部已生成订单，按材料合并后用于向商店下单。</p>
+        <div class="table-wrap">
+          <table class="total-purchase-table">
+            <thead>
+              <tr>
+                <th>材料</th>
+                <th>材料分类</th>
+                <th>整料长度 cm</th>
+                <th>总采购根数</th>
+                <th>单根价格 元</th>
+                <th>小计 元</th>
+                <th>订单来源</th>
+              </tr>
+            </thead>
+            <tbody id="totalPurchaseBody"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="panel result-panel product-only">
+        <div class="panel-title">
+          <h2 id="resultTitle">5. 本页优化结果</h2>
+          <div class="result-actions">
+            <button id="optimizeBtn" class="primary">计算本页采购方案</button>
+            <button id="saveResultBtn" class="secondary" disabled>保存本页余料</button>
+          </div>
+        </div>
+        <div id="summary" class="summary empty">填写材料和订单后，点击计算。</div>
+        <div id="results" class="results"></div>
+      </section>
+    </main>
+
+    <template id="materialRowTemplate">
+      <tr>
+        <td><select data-field="category"></select></td>
+        <td><input data-field="stockLength" type="number" min="1" step="0.1" /></td>
+        <td><input data-field="price" type="number" min="0" step="0.01" /></td>
+        <td><input data-field="kerf" type="number" min="0" step="0.1" /></td>
+        <td><input data-field="reuseMin" type="number" min="0" step="0.1" /></td>
+        <td><button class="icon danger" data-action="delete">删除</button></td>
+      </tr>
+    </template>
+
+    <template id="remnantRowTemplate">
+      <tr>
+        <td><select data-field="materialId"></select></td>
+        <td><input data-field="length" type="number" min="0" step="0.1" /></td>
+        <td><input data-field="note" placeholder="如 上次余料" /></td>
+        <td><button class="icon danger" data-action="delete">删除</button></td>
+      </tr>
+    </template>
+
+    <template id="demandRowTemplate">
+      <tr>
+        <td><select data-field="materialId"></select></td>
+        <td><input data-field="length" type="number" min="0.1" step="0.1" /></td>
+        <td><input data-field="qty" type="number" min="1" step="1" /></td>
+        <td><input data-field="note" placeholder="如 120x150外框" /></td>
+        <td><button class="icon danger" data-action="delete">删除</button></td>
+      </tr>
+    </template>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
