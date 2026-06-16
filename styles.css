@@ -43,6 +43,10 @@ body {
   background: rgba(255, 255, 255, 0.94);
   border-bottom: 1px solid var(--line);
   box-shadow: 0 1px 0 rgba(255, 255, 255, 0.9);
+  position: sticky;
+  top: 0;
+  z-index: 20;
+  backdrop-filter: blur(10px);
 }
 
 h1,
@@ -65,6 +69,7 @@ h2 {
 .topbar p {
   margin-top: 8px;
   color: var(--muted);
+  line-height: 1.55;
 }
 
 .top-actions,
@@ -77,13 +82,16 @@ h2 {
 
 .panel-title {
   justify-content: space-between;
-  margin-bottom: 14px;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #edf1f6;
 }
 
 .section-hint {
-  margin: -4px 0 12px;
+  margin: -6px 0 14px;
   color: var(--muted);
   font-size: 13px;
+  line-height: 1.55;
 }
 
 .app-shell {
@@ -122,6 +130,7 @@ h2 {
 .dash-card span {
   color: var(--muted);
   font-size: 13px;
+  font-weight: 600;
 }
 
 .dash-card.primary-card span,
@@ -144,7 +153,7 @@ h2 {
   display: grid;
   grid-template-columns: repeat(5, minmax(0, 1fr));
   gap: 10px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
 }
 
 .product-tabs button {
@@ -158,6 +167,7 @@ h2 {
   background: #fff;
   font-weight: 700;
   box-shadow: var(--shadow-soft);
+  letter-spacing: 0;
 }
 
 .product-tabs button:hover,
@@ -200,7 +210,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   padding: 20px;
-  margin-bottom: 18px;
+  margin-bottom: 20px;
   box-shadow: var(--shadow);
 }
 
@@ -212,8 +222,8 @@ h2 {
 
 .designer {
   display: grid;
-  grid-template-columns: 320px minmax(0, 1fr);
-  gap: 18px;
+  grid-template-columns: 340px minmax(0, 1fr);
+  gap: 20px;
   align-items: start;
 }
 
@@ -227,6 +237,7 @@ h2 {
   gap: 6px;
   color: var(--muted);
   font-size: 13px;
+  font-weight: 600;
 }
 
 .form-row {
@@ -351,6 +362,7 @@ h2 {
   border: 1px solid var(--line);
   border-radius: 8px;
   overflow: hidden;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.85);
 }
 
 .window-drawing svg {
@@ -477,7 +489,7 @@ table {
 
 th,
 td {
-  padding: 9px 8px;
+  padding: 10px 9px;
   border-bottom: 1px solid var(--line);
   text-align: left;
   vertical-align: middle;
@@ -488,6 +500,10 @@ th {
   font-size: 13px;
   font-weight: 600;
   background: #fbfcfe;
+}
+
+tbody tr:hover {
+  background: #fbfdff;
 }
 
 input,
@@ -501,6 +517,11 @@ select {
   background: #fff;
   color: var(--text);
   transition: border-color 0.16s ease, box-shadow 0.16s ease, background 0.16s ease;
+}
+
+input:hover,
+select:hover {
+  border-color: #aebdce;
 }
 
 input:focus,
@@ -541,6 +562,7 @@ button:disabled {
 button.secondary {
   color: var(--primary);
   background: #fff;
+  border-color: #9cc4e8;
 }
 
 button.secondary:hover {
@@ -552,6 +574,7 @@ button.icon.danger {
   color: var(--danger);
   border-color: #f1b8b2;
   background: #fff;
+  font-weight: 600;
 }
 
 button.danger:hover,
@@ -597,12 +620,13 @@ button.icon.danger:hover {
   display: block;
   margin-top: 5px;
   font-size: 22px;
+  letter-spacing: 0;
 }
 
 .material-result {
   border-top: 1px solid var(--line);
-  padding-top: 18px;
-  margin-top: 18px;
+  padding-top: 20px;
+  margin-top: 20px;
 }
 
 .result-drawing {
@@ -648,7 +672,7 @@ button.icon.danger:hover {
 
 .material-head h3 {
   margin: 0;
-  font-size: 18px;
+  font-size: 19px;
 }
 
 .material-head p {
@@ -664,7 +688,7 @@ button.icon.danger:hover {
 .bar-card {
   border: 1px solid var(--line);
   border-radius: 8px;
-  padding: 13px;
+  padding: 14px;
   background: #fff;
   box-shadow: var(--shadow-soft);
 }
@@ -673,7 +697,7 @@ button.icon.danger:hover {
   display: flex;
   justify-content: space-between;
   gap: 10px;
-  margin: 0 0 9px;
+  margin: 0 0 10px;
   font-size: 15px;
 }
 
@@ -800,6 +824,7 @@ button.icon.danger:hover {
   font-size: 12px;
   background: var(--soft);
   color: var(--primary);
+  font-weight: 600;
 }
 
 .tag.ok {
@@ -818,7 +843,8 @@ button.icon.danger:hover {
 }
 
 .cut-list li {
-  margin: 4px 0;
+  margin: 5px 0;
+  line-height: 1.45;
 }
 
 .muted {
@@ -869,6 +895,8 @@ button.icon.danger:hover {
     gap: 14px;
     padding: 18px 14px;
     box-shadow: none;
+    position: static;
+    backdrop-filter: none;
   }
 
   h1 {
