@@ -908,6 +908,7 @@ button.icon.danger:hover {
   .purchase-table,
   .total-purchase-table {
     min-width: 0;
+<<<<<<< HEAD
     table-layout: auto;
   }
 
@@ -924,6 +925,8 @@ button.icon.danger:hover {
     width: 100% !important;
     min-width: 0;
     left: auto !important;
+=======
+>>>>>>> 4d1cbbcda3b02110afb4ce62a70261b56f5d222b
   }
 
   .materials-table thead,
@@ -970,10 +973,13 @@ button.icon.danger:hover {
     background: #fff;
   }
 
+<<<<<<< HEAD
   .materials-table tr {
     padding: 12px;
   }
 
+=======
+>>>>>>> 4d1cbbcda3b02110afb4ce62a70261b56f5d222b
   .materials-table td,
   .remnants-table td,
   .design-orders-table td,
@@ -981,7 +987,11 @@ button.icon.danger:hover {
   .total-purchase-table td {
     position: static !important;
     display: grid;
+<<<<<<< HEAD
     grid-template-columns: minmax(88px, 32%) minmax(0, 1fr);
+=======
+    grid-template-columns: minmax(96px, 34%) minmax(0, 1fr);
+>>>>>>> 4d1cbbcda3b02110afb4ce62a70261b56f5d222b
     gap: 10px;
     align-items: center;
     min-height: 42px;
@@ -998,6 +1008,7 @@ button.icon.danger:hover {
     border-bottom: 0;
   }
 
+<<<<<<< HEAD
   .materials-table td:last-child,
   .remnants-table td:last-child,
   .design-orders-table td:last-child {
@@ -1010,6 +1021,8 @@ button.icon.danger:hover {
     display: none;
   }
 
+=======
+>>>>>>> 4d1cbbcda3b02110afb4ce62a70261b56f5d222b
   .materials-table td::before,
   .remnants-table td::before,
   .design-orders-table td::before,
@@ -1064,6 +1077,7 @@ button.icon.danger:hover {
   select,
   button {
     min-height: 42px;
+<<<<<<< HEAD
     min-width: 0;
   }
 
@@ -1083,6 +1097,8 @@ button.icon.danger:hover {
   .total-purchase-table select,
   .total-purchase-table button {
     width: 100%;
+=======
+>>>>>>> 4d1cbbcda3b02110afb4ce62a70261b56f5d222b
   }
 
   .bars {
